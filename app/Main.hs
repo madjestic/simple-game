@@ -15,12 +15,11 @@ main = do
   
   initializeAll
   window   <- createWindow "Simple Game" defaultWindow
-  renderer <- createRenderer window (-1) defaultRenderer
 
   _ <- setMouseLocationMode RelativeLocation
   _ <- warpMouse (WarpInWindow window) (P (V2 (resX`div`2) (resY`div`2)))
   _ <- cursorVisible $= True
   
-  runGame renderer
+  runGame window
   putStrLn "Exiting Game"
   

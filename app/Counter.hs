@@ -19,13 +19,13 @@ defaultState = do
 inc :: GameState -> Integer -> GameState
 inc (GameState c) n = GameState ( c + n )
 
-loop :: StateT GameState IO GameState
-loop = do
+gameLoop :: StateT GameState IO GameState
+gameLoop = do
   liftIO $ delay 100
   state <- get
   modify $ flip inc 1
   liftIO $ print state
-  loop
+  gameLoop
 
 startState :: GameState
 startState = GameState { tick = 0 }
@@ -39,7 +39,7 @@ runGame = do
       updateState :: StateT GameState IO GameState
       updateState = do
         defaultState
-        loop
+        gameLoop
 
 main :: IO ()
 main = do

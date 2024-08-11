@@ -1,0 +1,62 @@
+cabal-version:         3.0
+name:                  simple-game
+version:               0.1.0.1
+synopsis:              A simple game in haskell, using monad transformers
+license:               BSD-3-Clause   
+license-file:          LICENSE
+author:                madjestic
+maintainer:            madjestic13@gmail.com
+copyright:             Vladimir Lopatin
+category:              game
+build-type:            Simple
+extra-source-files:    CHANGELOG.md
+                         
+executable counter
+  main-is:             Counter.hs
+  build-depends:       base
+                     , mtl  
+                     , sdl2 
+  
+  hs-source-dirs:      app
+                     , src
+  default-language:    Haskell2010
+
+executable countersRef
+  main-is:             CountersRef.hs
+  build-depends:       base
+                     , mtl  
+                     , sdl2 
+  
+  hs-source-dirs:      app
+                     , src
+  default-language:    Haskell2010
+
+executable counters
+  main-is:             Counters.hs
+  build-depends:       base
+                     , mtl  
+                     , sdl2 
+  
+  hs-source-dirs:      app
+                     , src
+  default-language:    Haskell2010
+
+executable simple-game
+  main-is:             Main.hs
+  other-modules:
+                       Game
+                     , GameState
+                     , Input
+                     
+  build-depends:       base
+                     ,  mtl                 
+                     , sdl2
+                     , lens                
+  
+  hs-source-dirs:      app
+                     , src
+  ghc-options:   -O2 -threaded -Wall -Wcompat -Widentities -Wno-unused-top-binds -Wno-orphans
+  -- ghc-options:   -O2 -threaded
+  -- cpp-options:   -DDEBUG  
+                       
+  default-language:    Haskell2010
