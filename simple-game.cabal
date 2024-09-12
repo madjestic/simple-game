@@ -41,6 +41,42 @@ executable counters
                      , src
   default-language:    Haskell2010
 
+executable counterFuncs
+  main-is:             CounterFuncs.hs
+  build-depends:       base
+                     , mtl  
+                     , sdl2
+                     , strict-concurrency
+  
+  hs-source-dirs:      app
+                     , src
+  default-language:    Haskell2010
+
+executable importExport
+  main-is:             ImportExport.hs
+  build-depends:       base
+                     , mtl  
+                     , sdl2
+                     , strict-concurrency
+                     , random
+  
+  hs-source-dirs:      app
+                     , src
+  default-language:    Haskell2010
+
+executable PingPong
+  main-is:             PingPong.hs
+  build-depends:       base
+                     , mtl  
+                     , sdl2
+                     , strict-concurrency
+                     , random
+  
+  hs-source-dirs:      app
+                     , src
+  default-language:    Haskell2010
+  
+
 executable simple-game
   main-is:             Main.hs
   other-modules:
