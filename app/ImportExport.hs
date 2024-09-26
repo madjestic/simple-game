@@ -93,17 +93,14 @@ makeContracts aprs = (psc, csc) -- aprs - Actor Pairs
     psc = undefined 
     csc = undefined
 
-gameLoop :: MVar Commodity -> [Actor] -> [Contract] -> IO ()
-gameLoop cmv acts crs = do
+gameLoop :: Game -> IO ()
+gameLoop g0 = do
   threadDelay 1000000
-  c0   <- readMVar cmv
-  let d0 = balance c0
+  mapM_ preTrade $ actors g0
   
-  mapM_ preTrade acts -- preTrade commodity to establish base price
+  crs' <- updateContracts $ crs g0
   
-  crs' <- updateContracts crs
-  
-  gameLoop cmv acts crs
+  gameLoop g0
     where
       preTrade :: Actor -> IO ()
       preTrade act = do
@@ -173,4 +170,5 @@ main = do
         , crs     = [cr0]
         }
   
-  gameLoop waterMV [earth, moon] [cr0]
+  --gameLoop waterMV [earth, moon] [cr0]
+  gameLoop game
