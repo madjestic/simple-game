@@ -53,15 +53,13 @@ data Contract
   , agent1   :: MVar Actor     -- Contragent
   , commodCC :: MVar Commodity
   , time     :: Integer
-  , status   :: Bool -- Valid = 1 | Invalid = 0
   }
 
 instance Show Contract where
   show :: Contract -> String
-  show (Contract l _ _ _ t s) = "\n" ++
+  show (Contract l _ _ _ t) =
     "Contract: " ++ show l ++ "\n" ++
-    "time: "     ++ show t ++ "\n" ++
-    "status: "   ++ show s
+    "time: "     ++ show t
   
 updateActor :: Actor -> Contract -> IO Actor
 updateActor act contr = do  
@@ -95,54 +93,53 @@ makeContracts aprs = (psc, csc) -- aprs - Actor Pairs
     psc = undefined 
     csc = undefined
 
-loop :: Game -> IO ()
-loop g0 = do
-  putStrLn $ "Available contracts: " ++ show (crs g0)
-  threadDelay 1000000
-  mapM_ preTrade $ actors g0
-  
-  crs' <- updateContracts $ crs g0
-  
-  putStrLn $ "# Step: " ++ show (tick g0) 
-  loop $
-    g0
-    { tick = tick g0 + 1
-    , crs = crs' }
-
+runGame :: Game -> IO Game
+runGame game = do
+  evalStateT
+    updateState
+    game
+    
     where
+      updateState :: StateT Game IO Game
+      updateState = do
+        innerMonad
+        gameLoop
+        
+          where
+            innerMonad :: StateT Game IO ()
+            innerMonad = do return ()
+      
+
+gameLoop :: StateT Game IO Game
+gameLoop = do
+  lift $ threadDelay 1000000
+  
+  g0 <- get
+  lift $ mapM_ preTrade $ actors g0
+  crs' <- updateContracts $ crs g0
+  modify $ updateGameContracts crs'
+  
+  gameLoop
+    where
+      updateGameContracts :: [Contract] -> Game -> Game
+      updateGameContracts crs0 g0 = g0 { crs = crs0 }
+      
       preTrade :: Actor -> IO ()
       preTrade act = do
-        act'    <- takeMVar (commod act)
+        act' <- takeMVar (commod act)
         putMVar (commod act) (act' { balance  = balance act' + delta act })
+        
+        cmd  <- readMVar (commod act)
+        putStrLn $ show cmd ++ "\n"
 
-      updateContracts :: [Contract] -> IO [Contract]
+      updateContracts :: [Contract] -> StateT Game IO [Contract]
       updateContracts crs = do
-        putStrLn $ "Updating Contracts: \n" ++ show crs ++ "\n"
-        crs' <- mapM updateContract crs
-        putStrLn $ "> Updated Contracts: " ++ show crs'
-        return $ filter status crs'
+        lift $ mapM updateContract crs
+        return undefined
 
       updateContract :: Contract -> IO Contract
       updateContract cr = do
-        threadDelay 100000
-        putStrLn $ "- Updating Contract: " ++ show cr
-        if status cr && time cr >= 0 
-          then do
-            rnd <- randomRIO (0, 100) :: IO Int
-            putStrLn $ "rnd :" ++ show rnd
-            if rnd >= 10
-              then do
-                   putStrLn $ "Contract Status: OK"
-                   updateContract cr { time = time cr - 1}
-              else do
-                   putStrLn $ "\n" ++ "!!! ALERT !!!" ++ "\n"
-                   putStrLn $ "Pirates attacked the transport!"
-                   putStrLn $ "Contract Status: Invalid. \n"
-                   updateContract cr { status = False }
-          else do
-            cv <- readMVar (commodCC cr)
-            putStrLn $ "-> Result: " ++ show cv
-            return cr
+        return undefined
           
 toMVars :: [Actor] -> IO [MVar Actor]
 toMVars acs = do
@@ -157,12 +154,12 @@ main = do
         , balance = 0
         , deltaC  = 0  
         }
-  waterCommodMVar <- newMVar water
+  waterMV <- newMVar water
 
   let earth
         = Actor
         { lableA  = "Earth"
-        , commod  = waterCommodMVar
+        , commod  = waterMV
         , delta   = 1
         , capital = 1000
         }
@@ -171,7 +168,7 @@ main = do
   let moon
         = Actor
         { lableA  = "Moon"
-        , commod  = waterCommodMVar
+        , commod  = waterMV
         , delta   = -1
         , capital = 1000
         }
@@ -183,9 +180,8 @@ main = do
         { lableCC  = "Earth -> Moon"
         , agent0   = earthMV
         , agent1   = moonMV
-        , commodCC = waterCommodMVar
+        , commodCC = waterMV
         , time     = 10
-        , status   = True
         }
 
   let game
@@ -195,6 +191,6 @@ main = do
         , commods = [water]
         , crs     = [cr0]
         }
-
-  putStrLn $ "\n ===> A Space Opera <===\n"
-  loop game
+  
+  runGame game
+  return ()

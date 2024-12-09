@@ -6,6 +6,7 @@ module Game where
 import Control.Monad.State as State
 import SDL hiding (get)
 import Unsafe.Coerce      ( unsafeCoerce )
+import Control.Monad (when, unless)
 --import Control.Lens       ( toListOf, view, (^..), (^.), bimap)
 
 import GameState

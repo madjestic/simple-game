@@ -4,6 +4,7 @@
 module Main where
 
 import Control.Monad.State
+import Control.Monad (when)  
 import qualified Control.Concurrent
 import Control.Concurrent (MVar, newMVar, putMVar, takeMVar, tryTakeMVar, readMVar, threadDelay, forkIO)
 import Data.Maybe (fromMaybe)
