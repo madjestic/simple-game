@@ -91,7 +91,7 @@ executable simple-game
   
   hs-source-dirs:      app
                      , src
-  ghc-options:   -O2 -threaded -Wall -Wcompat -Widentities -Wno-unused-top-binds -Wno-orphans
+  -- ghc-options:   -O2 -threaded -Wall -Wcompat -Widentities -Wno-unused-top-binds -Wno-orphans
   -- ghc-options:   -O2 -threaded
   -- cpp-options:   -DDEBUG  
                        
