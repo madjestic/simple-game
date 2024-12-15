@@ -54,8 +54,11 @@ data Contract
   , agent1   :: MVar Actor     -- Contragent
   , commodCC :: MVar Commodity
   , time     :: Int
-  , status   :: Bool -- Valid = 1 | Invalid = 0
+  , status   :: Status
   }
+
+data Status = Valid | Invalid
+  deriving (Show, Eq)
 
 instance Show Contract where
   show :: Contract -> String
@@ -98,18 +101,18 @@ makeContracts aprs = (psc, csc) -- aprs - Actor Pairs
 
 loop :: Game -> IO ()
 loop g0 = do
-  --putStrLn $ "Available contracts: " ++ show (crs g0)
   putStrLn $ "# Step: " ++ show (tick g0) 
   threadDelay 1000000
   mapM_ preTrade $ actors g0
   
-  crs' <- updateContracts $ crs g0 -- TODO: game -> draw'
-  let result = g0
+  crs' <- updateContracts $ crs g0
+  let g1 = g0
         { tick = tick g0 + 12
         , crs = crs' }
   
-  draw result >> flip'
-  loop result 
+  draw g1
+
+  loop $ gc g1 -- garbage collect invalid contracts
     where
       preTrade :: Actor -> IO ()
       preTrade act = do
@@ -117,54 +120,58 @@ loop g0 = do
         putMVar (commod act) (act' { balance  = balance act' + delta act })
 
       updateContracts :: [Contract] -> IO [Contract]
-      updateContracts crs = do
-        --putStrLn $ "Updating Contracts: \n" ++ show crs ++ "\n"
-        crs' <- mapM updateContract crs
-        --putStrLn $ "> Updated Contracts: " ++ show crs'
-        return $ filter status crs'
+      updateContracts = mapM updateContract
 
       updateContract :: Contract -> IO Contract
       updateContract cr = do
         threadDelay 300000
-        --flip'
-          --putStrLn $ ">> Updating Contract: " ++ show cr
-        if status cr && time cr >= 0 
+        let prob = 25
+        if (status cr == Valid) && time cr >= 0 
           then do
             rnd <- randomRIO (0, 100) :: IO Int
             putStrLn $ "rnd :" ++ show rnd
-            if rnd >= 10
+            if rnd >= prob
               then do
-                   --putStrLn $ draw' (fromInteger $ 10 - time cr) '>'
-                   putStrLn $ "Contract Status: OK"
-                   --updateContract cr { time = time cr - 1}
                    return $ cr { time = time cr - 1}
               else do
-                   --putStrLn $ draw' (fromInteger $ 10 - time cr) 'X'
-                   putStrLn $ "Contract Status: Invalid. \n"
-                   putStrLn $ "\n" ++ " -!!! -ALERT -!!!" ++ "\n"
-                   putStrLn $ " -Pirates -attacked -the -transport!"
-                   --updateContract cr { status = False }
-                   return $ cr { status = False }
+                   return $ cr { status = Invalid }
           else do
             cv <- readMVar (commodCC cr)
             putStrLn $ "-> Result: " ++ show cv
             return cr
 
+gc :: Game -> Game
+gc g0 = -- collect invalid contracts
+  g0 { crs = filter (\cr' -> status cr' == Valid) $ crs g0 }
+
 draw :: Game -> IO ()
-draw g0 = putStrLn $ concatMap (`draw'` '>') $ crs g0
+draw g0 = do
+  mapM_ (\(ds, ls) -> do putStrLn ds >> flip' ls) (draw' <$> crs g0 :: [(String, Int)])
   
-draw' :: Contract -> Char -> String
-draw' cr chr = "[E" ++ h p ++ [chr] ++ t p ++ "M]" -- h,t - head,tail
+draw' :: Contract -> (String, Int)
+draw' cr = 
+  ("[E" ++ h p ++ [chr] ++ t p ++ "M]" -- h,t - head,tail
+   ++ "\n" ++
+   statusUpdate, ls)
   where
-    d   = 10 :: Int -- distance
+    chr = case status cr of
+      Valid   -> '>'
+      Invalid -> 'X'
+    (statusUpdate, ls) = case status cr of
+      Valid   -> ("Contract Status: OK", 10)
+      Invalid -> ("Contract Status: INVALID"  ++ "\n"
+                  ++ " -!!!!!!!!!!!!!!!" ++ "\n"
+                  ++ " -!!! -ALERT -!!!" ++ "\n"
+                  ++ " -!!!!!!!!!!!!!!!" ++ "\n"
+                  ++ "\n -Pirates -attacked -the -transport!", 6)
+    d   = 10 :: Int             -- distance
     p   = d - time cr
     h p = replicate p       '+' -- head
     t p = replicate (d-p-1) '-' -- tail
 
-flip' :: IO ()
-flip' =
+flip' :: Int -> IO ()
+flip' n =
   mapM_ (\_ -> putStrLn "") [0..n-1]
-  where n = 12
           
 toMVars :: [Actor] -> IO [MVar Actor]
 toMVars acs = do
@@ -207,7 +214,7 @@ main = do
         , agent1   = moonMV
         , commodCC = waterCommodMVar
         , time     = 10
-        , status   = True
+        , status   = Valid
         }
 
   let game
@@ -221,9 +228,6 @@ main = do
   putStrLn $ "\n ===> A Space Opera <===\n" 
   threadDelay 1000000
 
-  --drawWhile (>=0) 10 game
   loop game
 
-  putStrLn "   Game Over  "
-  flip'
-    --loop game
+  putStrLn "  Game Over  "
